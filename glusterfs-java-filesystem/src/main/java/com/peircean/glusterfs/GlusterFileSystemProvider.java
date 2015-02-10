@@ -1,8 +1,10 @@
 package com.peircean.glusterfs;
 
+import com.google.common.base.Splitter;
 import com.peircean.libgfapi_jni.internal.GLFS;
 import com.peircean.libgfapi_jni.internal.structs.stat;
 import com.peircean.libgfapi_jni.internal.structs.statvfs;
+
 import lombok.AccessLevel;
 import lombok.Getter;
 
@@ -43,13 +45,17 @@ public class GlusterFileSystemProvider extends FileSystemProvider {
         long volptr = glfsNew(volname);
 
         glfsSetVolfileServer(authority[0], volptr);
-
-        glfsInit(authorityString, volptr);
+        int gid = Integer.parseInt((String) stringMap.get("gid"));
+        int uid = Integer.parseInt((String) stringMap.get("uid"));
+        glfsInit(authorityString, volptr, gid, uid);
 
 //        GLFS.glfs_set_logging(volptr, "/tmp/gluster-java.log", 9);
-
+    
+        
+        
         GlusterFileSystem fileSystem = new GlusterFileSystem(this, authority[0], volname, volptr);
         cache.put(authorityString, fileSystem);
+        
 
         return fileSystem;
     }
@@ -81,8 +87,10 @@ public class GlusterFileSystemProvider extends FileSystemProvider {
         }
     }
 
-    void glfsInit(String authorityString, long volptr) {
+    void glfsInit(String authorityString, long volptr, int uid, int gid) {
         int init = glfs_init(volptr);
+        glfs_setfsuid(uid);
+        glfs_setfsgid(gid);
         if (0 != init) {
             throw new IllegalArgumentException("Failed to initialize glusterfs client: " + authorityString);
         }
@@ -108,7 +116,13 @@ public class GlusterFileSystemProvider extends FileSystemProvider {
         }
 
         try {
-            return newFileSystem(uri, null).getPath(uri.getPath());
+            String query = uri.getQuery();
+            final Map<String, String> map = null;
+            if (null != query && query.length() > 0) {
+            	 query = uri.getQuery().split("\\?")[1];
+            	 map = Splitter.on('&').trimResults().withKeyValueSeparator("=").split(query);
+            }
+            return newFileSystem(uri, map).getPath(uri.getPath());
         } catch (IOException e) {
             throw new FileSystemNotFoundException("Unable to open a connection to " + uri.getAuthority());
         }
@@ -441,7 +455,7 @@ public class GlusterFileSystemProvider extends FileSystemProvider {
 
     @Override
     public void setAttribute(Path path, String s, Object o, LinkOption... linkOptions) throws IOException {
-
+        
     }
 
     @Override

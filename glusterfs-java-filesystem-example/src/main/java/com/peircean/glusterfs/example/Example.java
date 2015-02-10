@@ -41,7 +41,7 @@ public class Example {
         String mountUri = "gluster://" + vagrantBox + ":" + volname + "/";
         String testUri = "gluster://" + vagrantBox + ":" + volname + "/baz";
         Path mountPath = Paths.get(new URI(mountUri));
-
+        
         FileSystem fileSystem = FileSystems.newFileSystem(new URI(mountUri), null);
         FileStore store = fileSystem.getFileStores().iterator().next();
         System.out.println("TOTAL SPACE: " + store.getTotalSpace());
@@ -59,6 +59,7 @@ public class Example {
 
         Set<PosixFilePermission> posixFilePermissions = PosixFilePermissions.fromString("rw-rw-rw-");
         FileAttribute<Set<PosixFilePermission>> attrs = PosixFilePermissions.asFileAttribute(posixFilePermissions);
+        
 
         Path glusterPath = Paths.get(new URI(testUri));
         System.out.println(glusterPath.getClass());
