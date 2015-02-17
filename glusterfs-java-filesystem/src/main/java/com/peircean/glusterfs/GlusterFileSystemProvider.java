@@ -117,7 +117,7 @@ public class GlusterFileSystemProvider extends FileSystemProvider {
 
         try {
             String query = uri.getQuery();
-            final Map<String, String> map = null;
+            Map<String, String> map = null;
             if (null != query && query.length() > 0) {
             	 query = uri.getQuery().split("\\?")[1];
             	 map = Splitter.on('&').trimResults().withKeyValueSeparator("=").split(query);

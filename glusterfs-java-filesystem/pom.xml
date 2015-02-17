@@ -42,7 +42,7 @@
 	</dependency>
         <dependency>
             <groupId>com.peircean.libgfapi-jni</groupId>
-            <artifactId>libgfapi-all</artifactId>
+            <artifactId>libgfapi-jni</artifactId>
             <version>1.0.5-SNAPSHOT</version>
         </dependency>
 
