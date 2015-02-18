@@ -40,14 +40,20 @@ public class GlusterFileSystemProvider extends FileSystemProvider {
     public FileSystem newFileSystem(URI uri, Map<String, ?> stringMap) throws IOException {
         String authorityString = uri.getAuthority();
         String[] authority = parseAuthority(authorityString);
-
         String volname = authority[1];
         long volptr = glfsNew(volname);
-
+          
         glfsSetVolfileServer(authority[0], volptr);
-        int gid = Integer.parseInt((String) stringMap.get("gid"));
-        int uid = Integer.parseInt((String) stringMap.get("uid"));
-        glfsInit(authorityString, volptr, gid, uid);
+        if (null != stringMap) {
+          int gid = Integer.parseInt((String) stringMap.get("gid"));
+          int uid = Integer.parseInt((String) stringMap.get("uid"));
+          
+          glfsInit(authorityString, volptr, gid, uid);
+        } else {
+        
+        	glfsInit(authorityString, volptr, -1, -1);
+        }
+        
 
 //        GLFS.glfs_set_logging(volptr, "/tmp/gluster-java.log", 9);
     
@@ -88,9 +94,13 @@ public class GlusterFileSystemProvider extends FileSystemProvider {
     }
 
     void glfsInit(String authorityString, long volptr, int uid, int gid) {
-        int init = glfs_init(volptr);
-        glfs_setfsuid(uid);
-        glfs_setfsgid(gid);
+    	int init = glfs_init(volptr);
+        
+        if (uid != -1 || gid != -1) {
+        	glfs_setfsuid(uid);
+            glfs_setfsgid(gid);
+        }
+        
         if (0 != init) {
             throw new IllegalArgumentException("Failed to initialize glusterfs client: " + authorityString);
         }
@@ -118,10 +128,12 @@ public class GlusterFileSystemProvider extends FileSystemProvider {
         try {
             String query = uri.getQuery();
             Map<String, String> map = null;
-            if (null != query && query.length() > 0) {
-            	 query = uri.getQuery().split("\\?")[1];
+            if (null != query && query.length() > 0) {	
+           // 	 query = uri.getQuery().split("\\?")[1];
+            	System.out.println("query: " + query);
             	 map = Splitter.on('&').trimResults().withKeyValueSeparator("=").split(query);
             }
+           
             return newFileSystem(uri, map).getPath(uri.getPath());
         } catch (IOException e) {
             throw new FileSystemNotFoundException("Unable to open a connection to " + uri.getAuthority());

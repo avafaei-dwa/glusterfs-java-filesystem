@@ -89,6 +89,11 @@ public class GlusterFileSystem extends FileSystem {
 
     @Override
     public Path getPath(String s, String... strings) {
+        System.out.println("!-------First String:" + s);
+        for (String m : strings) {
+        	System.out.println("!-------other String:" + m);
+        }
+    	
         boolean absolute = s.startsWith("/");
         if (absolute) {
             s = s.substring(1);
