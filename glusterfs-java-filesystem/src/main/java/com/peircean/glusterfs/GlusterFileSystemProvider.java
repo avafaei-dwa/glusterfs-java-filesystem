@@ -44,15 +44,9 @@ public class GlusterFileSystemProvider extends FileSystemProvider {
         long volptr = glfsNew(volname);
           
         glfsSetVolfileServer(authority[0], volptr);
-        if (null != stringMap) {
-          int gid = Integer.parseInt((String) stringMap.get("gid"));
-          int uid = Integer.parseInt((String) stringMap.get("uid"));
+        PermsTouple perms = getPerms((Map<String, String>)stringMap);
           
-          glfsInit(authorityString, volptr, gid, uid);
-        } else {
-        
-        	glfsInit(authorityString, volptr, -1, -1);
-        }
+          glfsInit(authorityString, volptr, perms.getUid(), perms.getGid());
         
 
 //        GLFS.glfs_set_logging(volptr, "/tmp/gluster-java.log", 9);
@@ -60,6 +54,7 @@ public class GlusterFileSystemProvider extends FileSystemProvider {
         
         
         GlusterFileSystem fileSystem = new GlusterFileSystem(this, authority[0], volname, volptr);
+        
         cache.put(authorityString, fileSystem);
         
 
@@ -113,6 +108,45 @@ public class GlusterFileSystemProvider extends FileSystemProvider {
         }
         return cache.get(uri.getAuthority());
     }
+    
+    private Map<String, String> getUriParams(URI uri) {
+    	 String query = uri.getQuery();
+         Map<String, String> map = null;
+         if (null != query && query.length() > 0) {	
+         	System.out.println("query: " + query);
+         	 map = Splitter.on('&').trimResults().withKeyValueSeparator("=").split(query);
+         }
+         return map;
+    }
+    
+    private PermsTouple getPerms(Map<String, String> params)  {
+    	if (null != params) { 		 
+            int gid = TryParseInt(params.get("gid"));
+            int uid = TryParseInt(params.get("uid"));
+            if (-1 != gid && -1 != uid) {
+           	 return new PermsTouple(uid, gid);
+            }
+   	 }
+    	
+   	 return null;
+    }
+    
+    
+    private PermsTouple getPerms(URI uri) {
+    	Map<String, String> params = getUriParams(uri);
+    	return getPerms(params);
+    }
+    
+    private boolean hasAccess(URI uri, GlusterPath path) throws IOException {
+          stat stat = statPath(path);
+          PermsTouple perms = getPerms(uri);
+          if (perms.uid == stat.st_uid)
+        	return true;
+          if (perms.gid == stat.st_gid)
+            return true;
+          
+         return false;
+    }
 
     @Override
     public Path getPath(URI uri) {
@@ -121,20 +155,16 @@ public class GlusterFileSystemProvider extends FileSystemProvider {
         }
         try {
             FileSystem fileSystem = getFileSystem(uri);
-            return fileSystem.getPath(uri.getPath());
-        } catch (FileSystemNotFoundException e) {
+            GlusterPath path = (GlusterPath)fileSystem.getPath(uri.getPath());
+            if (hasAccess(uri, path)) {
+               return path; 	
+            }
+            throw new AccessDeniedException(uri.toString());
+        } catch (FileSystemNotFoundException | IOException e) {
         }
 
-        try {
-            String query = uri.getQuery();
-            Map<String, String> map = null;
-            if (null != query && query.length() > 0) {	
-           // 	 query = uri.getQuery().split("\\?")[1];
-            	System.out.println("query: " + query);
-            	 map = Splitter.on('&').trimResults().withKeyValueSeparator("=").split(query);
-            }
-           
-            return newFileSystem(uri, map).getPath(uri.getPath());
+        try {         
+            return newFileSystem(uri, getUriParams(uri)).getPath(uri.getPath());
         } catch (IOException e) {
             throw new FileSystemNotFoundException("Unable to open a connection to " + uri.getAuthority());
         }
@@ -532,5 +562,32 @@ public class GlusterFileSystemProvider extends FileSystemProvider {
         statvfs buf = new statvfs();
         GLFS.glfs_statvfs(volptr, "/", buf);
         return buf.f_bsize * buf.f_bfree;
+    }
+    
+    private class PermsTouple {
+    	private int uid;
+    	private int gid;
+    	
+    	public PermsTouple(final int uid, final int gid) {
+    		this.uid = uid;
+    		this.gid = gid;
+    	}
+
+		public int getGid() {
+			return gid;
+		}
+
+		public int getUid() {
+			return uid;
+		}
+    	
+    }
+    
+    private static int TryParseInt(String someText) {
+    	   try {
+    	      return Integer.parseInt(someText);
+    	   } catch (NumberFormatException ex) {
+    	      return -1;
+    	   }
     }
 }

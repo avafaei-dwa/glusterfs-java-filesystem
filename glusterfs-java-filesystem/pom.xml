@@ -40,9 +40,15 @@
 		<artifactId>guava</artifactId>
 		<version>18.0</version>
 	</dependency>
+	
+	   <dependency>
+            <groupId>org.fusesource.hawtjni</groupId>
+            <artifactId>hawtjni-runtime</artifactId>
+            <version>1.9</version>
+        </dependency>
         <dependency>
             <groupId>com.peircean.libgfapi-jni</groupId>
-            <artifactId>libgfapi-jni</artifactId>
+            <artifactId>libgfapi-all</artifactId>
             <version>1.0.5-SNAPSHOT</version>
         </dependency>
 
