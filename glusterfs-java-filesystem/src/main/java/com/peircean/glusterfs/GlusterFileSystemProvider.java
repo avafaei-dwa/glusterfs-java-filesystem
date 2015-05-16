@@ -17,6 +17,10 @@ import java.nio.file.*;
 import java.nio.file.attribute.*;
 import java.nio.file.spi.FileSystemProvider;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static com.peircean.libgfapi_jni.internal.GLFS.*;
 
@@ -25,11 +29,13 @@ import static com.peircean.libgfapi_jni.internal.GLFS.*;
  */
 public class GlusterFileSystemProvider extends FileSystemProvider {
 
+    private static final Logger log = LoggerFactory.getLogger(GlusterFileSystemProvider.class);
+	
     public static final String GLUSTER = "gluster";
     public static final int GLUSTERD_PORT = 24007;
     public static final String TCP = "tcp";
     @Getter(AccessLevel.PACKAGE)
-    private static Map<String, GlusterFileSystem> cache = new HashMap<String, GlusterFileSystem>();
+    private static Map<String, GlusterFileSystem> cache = new ConcurrentHashMap<String, GlusterFileSystem>();
 
     @Override
     public String getScheme() {
@@ -41,6 +47,11 @@ public class GlusterFileSystemProvider extends FileSystemProvider {
         String authorityString = uri.getAuthority();
         String[] authority = parseAuthority(authorityString);
         String volname = authority[1];
+        if (cache.containsKey(authorityString)) {
+        	log.info("Call to recreate an already mounted volume {}", uri.toString());
+        	return cache.get("authroityString");
+        }
+        
         long volptr = glfsNew(volname);
           
         glfsSetVolfileServer(authority[0], volptr);

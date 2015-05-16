@@ -12,8 +12,8 @@
     <version>1.0.5-SNAPSHOT</version>
 
     <properties>
-        <glusterfs.server>172.17.0.3</glusterfs.server>
-        <glusterfs.volume>testvol</glusterfs.volume>
+        <glusterfs.server>gfs001.mgs.virtualdreamworks.com</glusterfs.server>
+        <glusterfs.volume>condor-submit</glusterfs.volume>
     </properties>
 
     <build>
